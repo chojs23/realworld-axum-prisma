@@ -531,6 +531,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "conduit-domain",
  "conduit-router",
  "serde",
  "tokio",
@@ -541,6 +542,7 @@ name = "conduit-domain"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "prisma-client-rust",
  "serde",
  "tokio",
 ]
