@@ -25,6 +25,7 @@ use tower_http::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = AppConfig::init();
+    tracing_subscriber::fmt::init();
 
     let prisma_client = Arc::new(PrismaClient::_builder().build().await?);
 
