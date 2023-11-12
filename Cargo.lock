@@ -533,6 +533,7 @@ dependencies = [
  "axum",
  "conduit-domain",
  "conduit-router",
+ "dotenv",
  "serde",
  "tokio",
  "tower",
