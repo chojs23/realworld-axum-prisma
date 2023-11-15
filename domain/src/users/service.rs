@@ -1,67 +1,19 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Extension, Json,
-};
-use prisma_client_rust::{
-    prisma_errors::query_engine::{RecordNotFound, UniqueKeyViolation},
-    QueryError,
-};
-use serde::{Deserialize, Serialize};
+use anyhow::Context;
+use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use axum::{Extension, Json};
+use rand::rngs::OsRng;
 use std::sync::Arc;
 
-use crate::prisma::*;
+use crate::{app_error::AppError, prisma::*};
 
-pub enum AppError {
-    PrismaError(QueryError),
-    NotFound,
-}
+use super::{
+    request::{UserCreateInput, UserLoginInput},
+    UserBody,
+};
+
 type Prisma = Extension<Arc<PrismaClient>>;
-type AppResult<T> = Result<T, AppError>;
-type AppJsonResult<T> = AppResult<Json<T>>;
 
-#[derive(Debug, Deserialize)]
-pub struct UserCreateRequest {
-    pub user: UserCreateInput,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserResponse {
-    pub user: user::Data,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UserCreateInput {
-    username: String,
-    email: String,
-    password: String,
-}
-
-impl From<QueryError> for AppError {
-    fn from(error: QueryError) -> Self {
-        match error {
-            e if e.is_prisma_error::<RecordNotFound>() => AppError::NotFound,
-            e => AppError::PrismaError(e),
-        }
-    }
-}
-
-// This centralizes all different errors from our app in one place
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        let status = match self {
-            AppError::PrismaError(error) if error.is_prisma_error::<UniqueKeyViolation>() => {
-                StatusCode::CONFLICT
-            }
-            AppError::PrismaError(_) => StatusCode::BAD_REQUEST,
-            AppError::NotFound => StatusCode::NOT_FOUND,
-        };
-
-        status.into_response()
-    }
-}
-
-pub struct UsersService {}
+pub struct UsersService;
 
 impl UsersService {
     pub async fn get_user() {
@@ -69,18 +21,73 @@ impl UsersService {
     }
     pub async fn create_user(
         prisma: Prisma,
-        Json(input): Json<UserCreateRequest>,
-    ) -> AppJsonResult<UserResponse> {
-        let input = input.user;
+        Json(input): Json<UserBody<UserCreateInput>>,
+    ) -> Result<Json<UserBody<user::Data>>, AppError> {
+        let UserBody {
+            user:
+                UserCreateInput {
+                    email,
+                    password,
+                    username,
+                },
+        } = input;
+
         let data = prisma
             .user()
-            .create(input.email, input.password, input.username, vec![])
+            .create(
+                email,
+                Self::hash_password(password.as_str()).unwrap(),
+                username,
+                vec![],
+            )
             .exec()
             .await?;
 
-        Ok(Json::from(UserResponse { user: data }))
+        Ok(Json::from(UserBody { user: data }))
     }
-    pub async fn login() {
-        println!("login");
+
+    pub async fn login(
+        prisma: Prisma,
+        Json(input): Json<UserBody<UserLoginInput>>,
+    ) -> Result<Json<UserBody<user::Data>>, AppError> {
+        let UserBody {
+            user: UserLoginInput { email, password },
+        } = input;
+
+        let data = prisma
+            .user()
+            .find_unique(user::email::equals(email))
+            .exec()
+            .await?
+            .unwrap();
+
+        let _ = Self::verify_password(password.as_str(), data.password.as_str());
+
+        Ok(Json::from(UserBody { user: data }))
+    }
+
+    fn hash_password(password: &str) -> Result<String, anyhow::Error> {
+        let salt = SaltString::generate(&mut OsRng);
+
+        // Argon2 with default params (Argon2id v19)
+        let argon2 = Argon2::default();
+
+        // Hash password to PHC string ($argon2id$v=19$...)
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
+            .map_err(|_| anyhow::anyhow!("failed to hash password"))?;
+
+        Ok(password_hash.to_string())
+    }
+
+    fn verify_password(password: &str, password_hash: &str) -> Result<(), anyhow::Error> {
+        let argon2 = Argon2::default();
+        // Parse password hash from PHC string
+        let password_hash = PasswordHash::new(password_hash).unwrap();
+        // Verify password against hash
+        argon2
+            .verify_password(password.as_bytes(), &password_hash)
+            .map_err(|_| anyhow::anyhow!("failed to verify password"))?;
+        Ok(())
     }
 }
