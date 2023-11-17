@@ -10,7 +10,7 @@ pub struct UsersRouter;
 impl UsersRouter {
     pub fn new() -> Router<AppContext> {
         Router::new()
-            .route("/user", get(UsersService::get_user))
+            .route("/user", get(UsersService::get_current_user))
             .route("/users", post(UsersService::create_user))
             .route("/users/login", post(UsersService::login))
         // .layer(Extension(service_register.users_service))
