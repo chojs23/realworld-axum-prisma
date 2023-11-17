@@ -5,7 +5,7 @@ use std::env;
 
 use super::{db::DatabaseConfig, jwt::JwtConfig};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AppConfig {
     pub port: u16,
     pub db: DatabaseConfig,

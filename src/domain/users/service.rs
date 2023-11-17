@@ -1,10 +1,15 @@
-use anyhow::Context;
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use axum::{Extension, Json};
 use rand::rngs::OsRng;
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
-use crate::{app_error::AppError, prisma::*};
+use crate::{
+    app_error::AppError,
+    prisma::{user, PrismaClient},
+};
 
 use super::{
     request::{UserCreateInput, UserLoginInput},
@@ -16,9 +21,7 @@ type Prisma = Extension<Arc<PrismaClient>>;
 pub struct UsersService;
 
 impl UsersService {
-    pub async fn get_user() {
-        println!("get user");
-    }
+    pub async fn get_user() {}
     pub async fn create_user(
         prisma: Prisma,
         Json(input): Json<UserBody<UserCreateInput>>,
@@ -90,4 +93,6 @@ impl UsersService {
             .map_err(|_| anyhow::anyhow!("failed to verify password"))?;
         Ok(())
     }
+
+    // fn new_token(&self, user_id: i64, email: &str) -> anyhow::Result<String> {}
 }

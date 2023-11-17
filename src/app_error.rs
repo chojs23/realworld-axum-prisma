@@ -21,7 +21,6 @@ impl From<QueryError> for AppError {
     }
 }
 
-// This centralizes all different errors from our app in one place
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = match self {

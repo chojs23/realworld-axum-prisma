@@ -3,15 +3,15 @@ pub mod users;
 use axum::{routing::get, Router};
 use users::router::UsersRouter;
 
+use crate::config::AppContext;
+
 pub struct AppRouter;
 
 impl AppRouter {
-    pub fn new() -> Router {
-        let router = Router::new()
+    pub fn new() -> Router<AppContext> {
+        Router::new()
             .route("/", get(hello))
-            .nest("/", UsersRouter::new());
-
-        router
+            .nest("/", UsersRouter::new())
     }
 }
 

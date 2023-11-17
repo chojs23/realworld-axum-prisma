@@ -12,9 +12,11 @@ use axum::{
     response::IntoResponse,
     BoxError, Extension, Json,
 };
-use conduit::config::app_config::AppConfig;
-use conduit_domain::prisma::PrismaClient;
-use conduit_router::AppRouter;
+use realword_axum_prisma::{
+    config::{app_config::AppConfig, AppContext},
+    prisma::PrismaClient,
+    router::AppRouter,
+};
 use serde_json::json;
 use tower::ServiceBuilder;
 use tower_http::{
@@ -25,6 +27,9 @@ use tower_http::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = AppConfig::init();
+    let app_context = AppContext {
+        config: Arc::new(config.clone()),
+    };
     tracing_subscriber::fmt::init();
 
     let prisma_client = Arc::new(PrismaClient::_builder().build().await?);
@@ -40,7 +45,8 @@ async fn main() -> anyhow::Result<()> {
                 .timeout(Duration::from_secs(30)),
         )
         .layer(cors)
-        .route_layer(middleware::from_fn(track_metrics));
+        .route_layer(middleware::from_fn(track_metrics))
+        .with_state(app_context);
 
     axum::Server::bind(&format!("0.0.0.0:{}", config.port).parse().unwrap())
         .serve(router.into_make_service())

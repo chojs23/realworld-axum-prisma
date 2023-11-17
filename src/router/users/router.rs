@@ -2,12 +2,13 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use conduit_domain::users::service::UsersService;
+
+use crate::{config::AppContext, domain::users::service::UsersService};
 
 pub struct UsersRouter;
 
 impl UsersRouter {
-    pub fn new() -> Router {
+    pub fn new() -> Router<AppContext> {
         Router::new()
             .route("/user", get(UsersService::get_user))
             .route("/users", post(UsersService::create_user))
