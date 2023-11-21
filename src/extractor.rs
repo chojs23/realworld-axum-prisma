@@ -14,13 +14,15 @@ use crate::{app_error::AppError, config::AppContext, prisma::PrismaClient};
 
 type Prisma = Extension<Arc<PrismaClient>>;
 
-const DEFAULT_SESSION_LENGTH: i64 = 60 * 60 * 24 * 7; // 7 days
+const JWT_EXPIRES_IN: i64 = 60 * 60 * 24 * 7; // 7 days
 const AUTH_HEADER_PREFIX: &str = "Token ";
 
+#[derive(Debug)]
 pub struct AuthUser {
     pub user_id: i32,
 }
 
+#[derive(Debug)]
 pub struct OptionalAuthUser(pub Option<AuthUser>);
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -34,7 +36,7 @@ impl AuthUser {
         let key = jsonwebtoken::EncodingKey::from_secret(ctx.config.jwt.secret.as_ref());
         let claims = AuthUserClaims {
             user_id: self.user_id,
-            exp: chrono::Utc::now().timestamp() + DEFAULT_SESSION_LENGTH,
+            exp: chrono::Utc::now().timestamp() + JWT_EXPIRES_IN,
         };
         let token = encode(&jsonwebtoken::Header::default(), &claims, &key).unwrap();
         token
@@ -84,9 +86,9 @@ impl AuthUser {
     }
 }
 
-impl OptionalAuthUser {
-    pub fn user(&self) -> Option<i32> {
-        self.0.as_ref().map(|auth_user| auth_user.user_id)
+impl From<OptionalAuthUser> for Option<AuthUser> {
+    fn from(optional_auth_user: OptionalAuthUser) -> Self {
+        optional_auth_user.0
     }
 }
 
