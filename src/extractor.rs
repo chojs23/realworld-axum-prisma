@@ -39,6 +39,7 @@ impl AuthUser {
         let token = encode(&jsonwebtoken::Header::default(), &claims, &key).unwrap();
         token
     }
+
     fn from_authorization(ctx: &AppContext, auth_header: &HeaderValue) -> Result<Self, AppError> {
         let auth_header = auth_header.to_str().map_err(|_| {
             log::debug!("Authorization header is not UTF-8");
