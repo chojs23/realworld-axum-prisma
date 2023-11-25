@@ -2,6 +2,7 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, Pa
 use axum::{extract::State, Extension, Json};
 use rand::rngs::OsRng;
 use std::sync::Arc;
+use tracing::info;
 
 use crate::{
     app_error::AppError,
@@ -11,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    request::{UserCreateInput, UserLoginInput},
+    request::{UserCreateInput, UserLoginInput, UserUpdateInput},
     response::User,
     UserBody,
 };
@@ -76,6 +77,64 @@ impl UsersService {
         Ok(Json::from(UserBody { user }))
     }
 
+    pub async fn update_user(
+        prisma: Prisma,
+        auth_user: AuthUser,
+        ctx: State<AppContext>,
+        Json(input): Json<UserBody<UserUpdateInput>>,
+    ) -> Result<Json<UserBody<User>>, AppError> {
+        let UserBody {
+            user:
+                UserUpdateInput {
+                    email,
+                    bio,
+                    image,
+                    username,
+                    password,
+                },
+        } = input;
+
+        let data = prisma
+            .user()
+            .find_unique(user::id::equals(auth_user.user_id))
+            .exec()
+            .await?
+            .unwrap();
+
+        let data = prisma
+            .user()
+            .update(
+                user::id::equals(auth_user.user_id),
+                vec![
+                    user::bio::set(bio),
+                    user::image::set(image),
+                    match email {
+                        Some(email) => user::email::set(email),
+                        None => user::email::set(data.email),
+                    },
+                    match username {
+                        Some(username) => user::username::set(username),
+                        None => user::username::set(data.username),
+                    },
+                    match password {
+                        Some(password) => {
+                            user::password::set(Self::hash_password(password.as_str()).unwrap())
+                        }
+                        None => user::password::set(data.password),
+                    },
+                ],
+            )
+            .exec()
+            .await?;
+
+        let mut user: User = data.into();
+
+        let token = AuthUser { user_id: user.id }.to_jwt(&ctx);
+        user.set_token(token);
+
+        Ok(Json::from(UserBody { user }))
+    }
+
     pub async fn login(
         prisma: Prisma,
         ctx: State<AppContext>,
@@ -92,7 +151,7 @@ impl UsersService {
             .await?
             .unwrap();
 
-        let _ = Self::verify_password(password.as_str(), data.password.as_str());
+        Self::verify_password(password.as_str(), data.password.as_str())?;
         let mut user: User = data.into();
 
         let token = AuthUser { user_id: user.id }.to_jwt(&ctx);
@@ -101,7 +160,7 @@ impl UsersService {
         Ok(Json::from(UserBody { user }))
     }
 
-    fn hash_password(password: &str) -> Result<String, anyhow::Error> {
+    fn hash_password(password: &str) -> anyhow::Result<String> {
         let salt = SaltString::generate(&mut OsRng);
 
         // Argon2 with default params (Argon2id v19)
@@ -115,10 +174,11 @@ impl UsersService {
         Ok(password_hash.to_string())
     }
 
-    fn verify_password(password: &str, password_hash: &str) -> Result<(), anyhow::Error> {
+    fn verify_password(password: &str, password_hash: &str) -> anyhow::Result<()> {
         let argon2 = Argon2::default();
         // Parse password hash from PHC string
-        let password_hash = PasswordHash::new(password_hash).unwrap();
+        let password_hash = PasswordHash::new(password_hash)
+            .map_err(|_| anyhow::anyhow!("failed to parse password hash from PHC string"))?;
         // Verify password against hash
         argon2
             .verify_password(password.as_bytes(), &password_hash)

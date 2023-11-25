@@ -11,7 +11,7 @@ impl AppRouter {
     pub fn new() -> Router<AppContext> {
         Router::new()
             .route("/", get(hello))
-            .nest("/", UsersRouter::new())
+            .nest("/api", UsersRouter::new())
     }
 }
 

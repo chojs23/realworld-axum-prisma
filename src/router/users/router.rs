@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 
@@ -13,7 +13,6 @@ impl UsersRouter {
             .route("/user", get(UsersService::get_current_user))
             .route("/users", post(UsersService::create_user))
             .route("/users/login", post(UsersService::login))
-        // .layer(Extension(service_register.users_service))
-        // .layer(Extension(service_register.token_service))
+            .route("/user", put(UsersService::update_user))
     }
 }
