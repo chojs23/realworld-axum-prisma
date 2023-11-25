@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
@@ -8,11 +6,9 @@ use axum::{
 use jsonwebtoken::{encode, TokenData};
 use prisma_client_rust::chrono;
 
-use axum::Extension;
+use tracing::{debug, error, info};
 
-use crate::{app_error::AppError, config::AppContext, prisma::PrismaClient};
-
-type Prisma = Extension<Arc<PrismaClient>>;
+use crate::{app_error::AppError, config::AppContext};
 
 const JWT_EXPIRES_IN: i64 = 60 * 60 * 24 * 7; // 7 days
 const AUTH_HEADER_PREFIX: &str = "Token ";
@@ -44,12 +40,12 @@ impl AuthUser {
 
     fn from_authorization(ctx: &AppContext, auth_header: &HeaderValue) -> Result<Self, AppError> {
         let auth_header = auth_header.to_str().map_err(|_| {
-            log::debug!("Authorization header is not UTF-8");
+            info!("Authorization header is not UTF-8");
             AppError::Unauthorized
         })?;
 
         if !auth_header.starts_with(AUTH_HEADER_PREFIX) {
-            log::debug!(
+            info!(
                 "Authorization header is using the wrong scheme: {:?}",
                 auth_header
             );
@@ -64,19 +60,19 @@ impl AuthUser {
             &jsonwebtoken::Validation::default(),
         )
         .map_err(|e| {
-            log::debug!("JWT validation failed: {:?}", e);
+            debug!("JWT validation failed: {:?}", e);
             AppError::Unauthorized
         })?;
 
         let TokenData { header, claims } = jwt;
 
         if (header.alg != jsonwebtoken::Algorithm::HS256) {
-            log::debug!("JWT is using the wrong algorithm: {:?}", header.alg);
+            debug!("JWT is using the wrong algorithm: {:?}", header.alg);
             return Err(AppError::Unauthorized);
         }
 
         if (claims.exp < chrono::Utc::now().timestamp()) {
-            log::debug!("JWT is expired");
+            debug!("JWT is expired");
             return Err(AppError::Unauthorized);
         }
 

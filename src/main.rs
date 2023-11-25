@@ -23,6 +23,7 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -30,7 +31,10 @@ async fn main() -> anyhow::Result<()> {
     let app_context = AppContext {
         config: Arc::new(config.clone()),
     };
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(&config.log_level))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
 
     let prisma_client = Arc::new(PrismaClient::_builder().build().await?);
 
