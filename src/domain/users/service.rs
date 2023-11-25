@@ -106,8 +106,14 @@ impl UsersService {
             .update(
                 user::id::equals(auth_user.user_id),
                 vec![
-                    user::bio::set(bio),
-                    user::image::set(image),
+                    match bio {
+                        Some(bio) => user::bio::set(Some(bio)),
+                        None => user::bio::set(data.bio),
+                    },
+                    match image {
+                        Some(image) => user::image::set(Some(image)),
+                        None => user::image::set(data.image),
+                    },
                     match email {
                         Some(email) => user::email::set(email),
                         None => user::email::set(data.email),
