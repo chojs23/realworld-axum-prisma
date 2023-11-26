@@ -41,7 +41,7 @@ impl AuthUser {
     fn from_authorization(ctx: &AppContext, auth_header: &HeaderValue) -> Result<Self, AppError> {
         let auth_header = auth_header.to_str().map_err(|_| {
             info!("Authorization header is not UTF-8");
-            AppError::Unauthorized
+            AppError::Unauthorized(String::from("Authorization header is not UTF-8"))
         })?;
 
         if !auth_header.starts_with(AUTH_HEADER_PREFIX) {
@@ -49,7 +49,9 @@ impl AuthUser {
                 "Authorization header is using the wrong scheme: {:?}",
                 auth_header
             );
-            return Err(AppError::Unauthorized);
+            return Err(AppError::Unauthorized(String::from(
+                "Authorization header is using the wrong scheme",
+            )));
         }
 
         let token = &auth_header[AUTH_HEADER_PREFIX.len()..];
@@ -61,19 +63,21 @@ impl AuthUser {
         )
         .map_err(|e| {
             debug!("JWT validation failed: {:?}", e);
-            AppError::Unauthorized
+            AppError::Unauthorized(String::from("JWT validation failed"))
         })?;
 
         let TokenData { header, claims } = jwt;
 
         if (header.alg != jsonwebtoken::Algorithm::HS256) {
             debug!("JWT is using the wrong algorithm: {:?}", header.alg);
-            return Err(AppError::Unauthorized);
+            return Err(AppError::Unauthorized(String::from(
+                "JWT is using the wrong algorithm",
+            )));
         }
 
         if (claims.exp < chrono::Utc::now().timestamp()) {
             debug!("JWT is expired");
-            return Err(AppError::Unauthorized);
+            return Err(AppError::Unauthorized(String::from("JWT is expired")));
         }
 
         Ok(Self {
@@ -110,7 +114,9 @@ where
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or(AppError::Unauthorized)?;
+            .ok_or(AppError::Unauthorized(String::from(
+                "Missing Authorization header",
+            )))?;
 
         Self::from_authorization(&ctx, auth_header)
     }

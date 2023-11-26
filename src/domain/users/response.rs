@@ -1,4 +1,3 @@
-use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::prisma::user;

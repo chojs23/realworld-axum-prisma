@@ -2,7 +2,6 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, Pa
 use axum::{extract::State, Extension, Json};
 use rand::rngs::OsRng;
 use std::sync::Arc;
-use tracing::info;
 
 use crate::{
     app_error::AppError,
@@ -41,7 +40,7 @@ impl UsersService {
 
                 Ok(Json::from(UserBody { user }))
             }
-            None => Err(AppError::NotFound),
+            None => Err(AppError::NotFound(String::from("User not found"))),
         }
     }
     pub async fn create_user(
