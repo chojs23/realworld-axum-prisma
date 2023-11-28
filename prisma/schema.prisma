@@ -19,8 +19,11 @@ model User {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  followedBy UserFollows[] @relation("followedBy")
-  following  UserFollows[] @relation("following")
+  followedBy          UserFollows[]         @relation("followedBy")
+  following           UserFollows[]         @relation("following")
+  UserFavoriteArticle UserFavoriteArticle[]
+  Article             Article[]
+  Comment             Comment[]
 }
 
 model UserFollows {
@@ -30,4 +33,55 @@ model UserFollows {
   followingId  Int
 
   @@id([followingId, followedById])
+}
+
+model UserFavoriteArticle {
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  article   Article @relation(fields: [articleId], references: [id])
+  articleId Int
+
+  @@id([userId, articleId])
+}
+
+model Article {
+  id             Int       @id @default(autoincrement())
+  slug           String    @unique
+  title          String
+  description    String
+  body           String
+  favoritesCount Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  author   User @relation(fields: [authorId], references: [id])
+  authorId Int
+
+  tags        ArticleTag[]
+  favoritedBy UserFavoriteArticle[]
+  Comment     Comment[]
+}
+
+model ArticleTag {
+  id  Int    @id @default(autoincrement())
+  tag String
+
+  article   Article @relation(fields: [articleId], references: [id])
+  articleId Int
+
+  @@unique([articleId, tag])
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  body      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  author    User    @relation(fields: [authorId], references: [id])
+  authorId  Int
+  article   Article @relation(fields: [articleId], references: [id])
+  articleId Int
 }

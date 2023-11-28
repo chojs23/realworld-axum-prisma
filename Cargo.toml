@@ -1,5 +1,5 @@
 [package]
-name = "realword-axum-prisma"
+name = "realworld-axum-prisma"
 version = "0.1.0"
 edition = "2021"
 

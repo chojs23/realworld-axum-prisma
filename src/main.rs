@@ -12,7 +12,7 @@ use axum::{
     response::IntoResponse,
     BoxError, Extension, Json,
 };
-use realword_axum_prisma::{
+use realworld_axum_prisma::{
     config::{app_config::AppConfig, AppContext},
     prisma::PrismaClient,
     router::AppRouter,
@@ -23,6 +23,7 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -51,6 +52,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors)
         .route_layer(middleware::from_fn(track_metrics))
         .with_state(app_context);
+
+    info!("starting server on port {}", config.port);
 
     axum::Server::bind(&format!("0.0.0.0:{}", config.port).parse().unwrap())
         .serve(router.into_make_service())
