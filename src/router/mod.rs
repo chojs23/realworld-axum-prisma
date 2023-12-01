@@ -1,3 +1,4 @@
+pub mod articles;
 pub mod profiles;
 pub mod users;
 
@@ -6,7 +7,7 @@ use users::router::UsersRouter;
 
 use crate::config::AppContext;
 
-use self::profiles::router::ProfilesRouter;
+use self::{articles::router::ArticlesRouter, profiles::router::ProfilesRouter};
 
 pub struct AppRouter;
 
@@ -16,6 +17,7 @@ impl AppRouter {
             .route("/", get(hello))
             .nest("/api", UsersRouter::new())
             .nest("/api", ProfilesRouter::new())
+            .nest("/api", ArticlesRouter::new())
     }
 }
 

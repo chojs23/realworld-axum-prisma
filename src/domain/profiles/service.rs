@@ -1,12 +1,8 @@
-use axum::{
-    extract::{Path, State},
-    Extension, Json,
-};
+use axum::{extract::Path, Extension, Json};
 use std::sync::Arc;
 
 use crate::{
     app_error::AppError,
-    config::AppContext,
     extractor::{AuthUser, OptionalAuthUser},
     prisma::{user, user_follows, PrismaClient},
 };
@@ -21,7 +17,6 @@ impl ProfilesService {
     pub async fn get_profile(
         Path(username): Path<String>,
         auth_user: OptionalAuthUser,
-        ctx: State<AppContext>,
         prisma: Prisma,
     ) -> Result<Json<ProfileBody<Profile>>, AppError> {
         let user = prisma
@@ -49,7 +44,6 @@ impl ProfilesService {
     pub async fn follow_profile(
         Path(username): Path<String>,
         auth_user: AuthUser,
-        ctx: State<AppContext>,
         prisma: Prisma,
     ) -> Result<Json<ProfileBody<Profile>>, AppError> {
         let current_user = prisma
@@ -59,7 +53,7 @@ impl ProfilesService {
             .await?
             .ok_or(AppError::NotFound(String::from("User not found")))?;
 
-        if (current_user.username == username) {
+        if current_user.username == username {
             return Err(AppError::BadRequest(String::from(
                 "You cannot follow yourself",
             )));
@@ -94,7 +88,6 @@ impl ProfilesService {
     pub async fn unfollow_profile(
         Path(username): Path<String>,
         auth_user: AuthUser,
-        ctx: State<AppContext>,
         prisma: Prisma,
     ) -> Result<Json<ProfileBody<Profile>>, AppError> {
         let current_user = prisma

@@ -6,8 +6,8 @@ use std::{
 use anyhow::Context;
 use axum::{
     error_handling::HandleErrorLayer,
-    extract::MatchedPath,
-    http::{Request, StatusCode},
+    extract::{MatchedPath, Request},
+    http::StatusCode,
     middleware::{self, Next},
     response::IntoResponse,
     BoxError, Extension, Json,
@@ -41,7 +41,8 @@ async fn main() -> anyhow::Result<()> {
 
     let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
 
-    let router = AppRouter::new()
+    let app = AppRouter::new()
+        .layer(cors)
         .layer(Extension(prisma_client))
         .layer(
             ServiceBuilder::new()
@@ -49,14 +50,15 @@ async fn main() -> anyhow::Result<()> {
                 .layer(HandleErrorLayer::new(handle_timeout_error))
                 .timeout(Duration::from_secs(30)),
         )
-        .layer(cors)
         .route_layer(middleware::from_fn(track_metrics))
         .with_state(app_context);
 
     info!("starting server on port {}", config.port);
 
-    axum::Server::bind(&format!("0.0.0.0:{}", config.port).parse().unwrap())
-        .serve(router.into_make_service())
+    let listener = tokio::net::TcpListener::bind(&format!("0.0.0.0:{}", config.port))
+        .await
+        .unwrap();
+    axum::serve(listener, app)
         .await
         .context("error while booting server")?;
 
@@ -83,7 +85,7 @@ async fn handle_timeout_error(err: BoxError) -> (StatusCode, Json<serde_json::Va
     }
 }
 
-async fn track_metrics<B>(request: Request<B>, next: Next<B>) -> impl IntoResponse {
+async fn track_metrics(request: Request, next: Next) -> impl IntoResponse {
     let path = if let Some(matched_path) = request.extensions().get::<MatchedPath>() {
         matched_path.as_str().to_owned()
     } else {

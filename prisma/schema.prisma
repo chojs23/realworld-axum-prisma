@@ -1,6 +1,7 @@
 generator client {
-  provider = "cargo prisma"
-  output   = "../src/prisma.rs"
+  provider    = "cargo prisma"
+  output      = "../src/prisma.rs"
+  module_path = "generated::db"
 }
 
 datasource db {

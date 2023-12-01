@@ -43,6 +43,7 @@ impl UsersService {
             None => Err(AppError::NotFound(String::from("User not found"))),
         }
     }
+
     pub async fn create_user(
         prisma: Prisma,
         ctx: State<AppContext>,
@@ -190,6 +191,4 @@ impl UsersService {
             .map_err(|_| anyhow::anyhow!("failed to verify password"))?;
         Ok(())
     }
-
-    // fn new_token(&self, user_id: i64, email: &str) -> anyhow::Result<String> {}
 }
