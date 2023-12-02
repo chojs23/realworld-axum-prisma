@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Router,
 };
 
@@ -13,5 +13,6 @@ impl ArticlesRouter {
             .route("/articles", post(ArticlesService::create_article))
             .route("/articles/:slug", get(ArticlesService::get_article))
             .route("/articles/:slug", put(ArticlesService::update_article))
+            .route("/articles/:slug", delete(ArticlesService::delete_article))
     }
 }

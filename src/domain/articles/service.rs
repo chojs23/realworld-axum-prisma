@@ -1,4 +1,5 @@
 use axum::{extract::Path, Extension, Json};
+use prisma_client_rust::chrono;
 use std::sync::Arc;
 
 use crate::{
@@ -60,6 +61,15 @@ impl ArticlesService {
             .await?;
 
         Ok(data.is_some())
+    }
+
+    fn slug_hash(slug: &str) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut hasher = DefaultHasher::new();
+        slug.hash(&mut hasher);
+        hasher.finish()
     }
 
     pub async fn create_article(
@@ -166,6 +176,36 @@ impl ArticlesService {
         Ok(Json::from(ArticleBody {
             article: updated_article.to_article(vec![], false, false),
         }))
+    }
+
+    pub async fn delete_article(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+    ) -> Result<Json<String>, AppError> {
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        Self::check_author(&auth_user, &article)?;
+
+        let _ = prisma
+            .article()
+            .update(
+                article::slug::equals(slug.clone()),
+                vec![
+                    article::slug::set(Self::slug_hash(slug.as_str()).to_string()),
+                    article::deleted_at::set(Some(chrono::Utc::now().into())),
+                ],
+            )
+            .exec()
+            .await?;
+
+        Ok(Json::from("Article deleted".to_string()))
     }
 
     pub async fn get_article(

@@ -6,7 +6,7 @@ use axum::{
 use jsonwebtoken::{encode, TokenData};
 use prisma_client_rust::chrono;
 
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 use crate::{app_error::AppError, config::AppContext};
 
@@ -34,8 +34,8 @@ impl AuthUser {
             user_id: self.user_id,
             exp: chrono::Utc::now().timestamp() + JWT_EXPIRES_IN,
         };
-        let token = encode(&jsonwebtoken::Header::default(), &claims, &key).unwrap();
-        token
+
+        encode(&jsonwebtoken::Header::default(), &claims, &key).unwrap()
     }
 
     fn from_authorization(ctx: &AppContext, auth_header: &HeaderValue) -> Result<Self, AppError> {
@@ -68,14 +68,14 @@ impl AuthUser {
 
         let TokenData { header, claims } = jwt;
 
-        if (header.alg != jsonwebtoken::Algorithm::HS256) {
+        if header.alg != jsonwebtoken::Algorithm::HS256 {
             debug!("JWT is using the wrong algorithm: {:?}", header.alg);
             return Err(AppError::Unauthorized(String::from(
                 "JWT is using the wrong algorithm",
             )));
         }
 
-        if (claims.exp < chrono::Utc::now().timestamp()) {
+        if claims.exp < chrono::Utc::now().timestamp() {
             debug!("JWT is expired");
             return Err(AppError::Unauthorized(String::from("JWT is expired")));
         }
@@ -92,13 +92,6 @@ impl From<OptionalAuthUser> for Option<AuthUser> {
     }
 }
 
-// tower-http has a `RequireAuthorizationLayer` but it's useless for practical applications,
-// as it only supports matching Basic or Bearer auth with credentials you provide it.
-//
-// There's the `::custom()` constructor to provide your own validator but it basically
-// requires parsing the `Authorization` header by-hand anyway so you really don't get anything
-// out of it that you couldn't write your own middleware for, except with a bunch of extra
-// boilerplate.
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthUser
 where
@@ -110,7 +103,6 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let ctx: AppContext = AppContext::from_ref(state);
 
-        // Get the value of the `Authorization` header, if it was sent at all.
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
@@ -134,7 +126,6 @@ where
         let ctx: AppContext = AppContext::from_ref(state);
 
         Ok(Self(
-            // Get the value of the `Authorization` header, if it was sent at all.
             parts
                 .headers
                 .get(AUTHORIZATION)
