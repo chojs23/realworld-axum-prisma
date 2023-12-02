@@ -1,5 +1,6 @@
 pub mod articles;
 pub mod profiles;
+pub mod tags;
 pub mod users;
 
 use axum::{routing::get, Router};
@@ -7,7 +8,9 @@ use users::router::UsersRouter;
 
 use crate::config::AppContext;
 
-use self::{articles::router::ArticlesRouter, profiles::router::ProfilesRouter};
+use self::{
+    articles::router::ArticlesRouter, profiles::router::ProfilesRouter, tags::router::TagsRouter,
+};
 
 pub struct AppRouter;
 
@@ -18,6 +21,7 @@ impl AppRouter {
             .nest("/api", UsersRouter::new())
             .nest("/api", ProfilesRouter::new())
             .nest("/api", ArticlesRouter::new())
+            .nest("/api", TagsRouter::new())
     }
 }
 
