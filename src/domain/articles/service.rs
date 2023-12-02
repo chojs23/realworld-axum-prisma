@@ -3,13 +3,17 @@ use axum::{
     Extension, Json,
 };
 use prisma_client_rust::chrono;
+use prisma_client_rust::Direction;
 use std::sync::Arc;
 
 use crate::{
     app_error::AppError,
     domain::profiles::service::ProfilesService,
     extractor::{AuthUser, OptionalAuthUser},
-    prisma::{self, article, article_tag, user, user_favorite_article, PrismaClient},
+    prisma::{
+        self, article, article_tag, user, user_favorite_article, user_follows::followed_by_id,
+        PrismaClient,
+    },
 };
 
 use super::{
@@ -294,6 +298,71 @@ impl ArticlesService {
                 .iter()
                 .map(|article| article.clone().to_article(false, false))
                 .collect();
+        }
+
+        Ok(Json::from(ArticlesBody {
+            articles,
+            articles_count: articles_count as usize,
+        }))
+    }
+
+    pub async fn get_articles_feed(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Query(query): Query<ArticleListQuery>,
+    ) -> Result<Json<ArticlesBody<Article>>, AppError> {
+        let mut filter: Vec<prisma::article::WhereParam> = Vec::new();
+
+        if let Some(tag) = query.tag {
+            filter.push(article::tags::some(vec![article_tag::tag::equals(tag)]))
+        }
+
+        if let Some(author) = query.author {
+            filter.push(article::author::is(vec![user::username::equals(author)]))
+        }
+
+        if let Some(favorited) = query.favorited {
+            filter.push(article::favorited_by::some(vec![
+                user_favorite_article::user::is(vec![user::username::equals(favorited)]),
+            ]))
+        }
+
+        let aa = prisma
+            .user()
+            .find_unique(user::id::equals(auth_user.user_id))
+            .with(user::following::fetch(vec![]))
+            .with(user::followed_by::fetch(vec![]))
+            .exec()
+            .await?;
+
+        filter.push(article::author::is(vec![user::followed_by::some(vec![
+            followed_by_id::equals(auth_user.user_id),
+        ])]));
+
+        filter.push(article::deleted_at::equals(None));
+
+        let _articles = prisma
+            .article()
+            .find_many(filter.clone())
+            .with(article::author::fetch())
+            .with(article::tags::fetch(vec![]))
+            .take(query.limit.unwrap_or(20))
+            .skip(query.offset.unwrap_or(0))
+            .order_by(article::created_at::order(Direction::Desc))
+            .exec()
+            .await?;
+
+        let articles_count = prisma.article().count(filter).exec().await?;
+
+        let mut articles: Vec<Article> = Vec::new();
+
+        for article in _articles.iter() {
+            let favorited = Self::check_favorited(&prisma, &auth_user, article.id).await?;
+
+            let followed =
+                ProfilesService::check_following(&prisma, &auth_user, article.author_id).await?;
+
+            articles.push(article.clone().to_article(favorited, followed));
         }
 
         Ok(Json::from(ArticlesBody {
