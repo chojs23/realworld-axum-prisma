@@ -24,13 +24,7 @@ pub struct Article {
 }
 
 impl article::Data {
-    pub fn to_article(
-        self,
-        tag_list: Vec<String>,
-        favorited: bool,
-        favorites_count: i32,
-        author: Profile,
-    ) -> Article {
+    pub fn to_article(self, tag_list: Vec<String>, favorited: bool, following: bool) -> Article {
         Article {
             id: self.id,
             slug: self.slug,
@@ -41,26 +35,8 @@ impl article::Data {
             created_at: self.created_at,
             updated_at: self.updated_at,
             favorited,
-            favorites_count,
-            author,
+            favorites_count: self.favorites_count,
+            author: self.author.unwrap().to_profile(following),
         }
     }
 }
-//
-// impl From<(article::Data, bool, i32, Profile)> for Article {
-//     fn from(data: article::Data, favorited: bool, favorites_count: i32, author: Profile) -> Self {
-//         Self {
-//             id: data.id,
-//             slug: data.slug,
-//             title: data.title,
-//             description: data.description,
-//             body: data.body,
-//             tag_list: [].to_vec(),
-//             created_at: data.created_at,
-//             updated_at: data.updated_at,
-//             favorited,
-//             favorites_count,
-//             author,
-//         }
-//     }
-// }

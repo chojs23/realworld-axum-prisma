@@ -17,6 +17,17 @@ pub struct Profile {
     pub following: bool,
 }
 
+impl user::Data {
+    pub fn to_profile(self, following: bool) -> Profile {
+        Profile {
+            username: self.username,
+            bio: self.bio,
+            image: self.image,
+            following,
+        }
+    }
+}
+
 impl From<user::Data> for Profile {
     fn from(data: user::Data) -> Self {
         Self {
@@ -24,17 +35,6 @@ impl From<user::Data> for Profile {
             bio: data.bio,
             image: data.image,
             following: false,
-        }
-    }
-}
-
-impl From<(user::Data, bool)> for Profile {
-    fn from((data, following): (user::Data, bool)) -> Self {
-        Self {
-            username: data.username,
-            bio: data.bio,
-            image: data.image,
-            following,
         }
     }
 }

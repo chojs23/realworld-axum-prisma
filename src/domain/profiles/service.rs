@@ -27,9 +27,9 @@ impl ProfilesService {
 
         match user {
             Some(data) => {
-                if Self::check_following(&prisma, auth_user.0.unwrap(), data.id).await? {
+                if Self::check_following(&prisma, &auth_user.0.unwrap(), data.id).await? {
                     return Ok(Json::from(ProfileBody {
-                        profile: (data, true).into(),
+                        profile: data.to_profile(true),
                     }));
                 }
 
@@ -81,7 +81,7 @@ impl ProfilesService {
             .await?;
 
         Ok(Json::from(ProfileBody {
-            profile: (followee, true).into(),
+            profile: followee.to_profile(true),
         }))
     }
 
@@ -121,13 +121,13 @@ impl ProfilesService {
             .is_ok();
 
         Ok(Json::from(ProfileBody {
-            profile: (followee, false).into(),
+            profile: followee.to_profile(false),
         }))
     }
 
-    async fn check_following(
+    pub async fn check_following(
         prisma: &Prisma,
-        auth_user: AuthUser,
+        auth_user: &AuthUser,
         followee_id: i32,
     ) -> Result<bool, AppError> {
         let follow = prisma

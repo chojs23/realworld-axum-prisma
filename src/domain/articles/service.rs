@@ -1,11 +1,15 @@
-use axum::{extract::State, Extension, Json};
+use axum::{
+    extract::{Path, State},
+    Extension, Json,
+};
 use std::sync::Arc;
 
 use crate::{
     app_error::AppError,
     config::AppContext,
-    extractor::AuthUser,
-    prisma::{article_tag, user, user_favorite_article, PrismaClient},
+    domain::profiles::service::ProfilesService,
+    extractor::{AuthUser, OptionalAuthUser},
+    prisma::{article, article_tag, user, user_favorite_article, PrismaClient},
 };
 
 use super::{request::ArticleCreateInput, response::Article, ArticleBody};
@@ -28,13 +32,16 @@ impl ArticlesService {
 
     async fn check_favorited(
         prisma: &Prisma,
-        user_id: i32,
+        auth_user: &AuthUser,
         article_id: i32,
     ) -> Result<bool, AppError> {
         let data = prisma
             .user_favorite_article()
             .find_unique(
-                user_favorite_article::UniqueWhereParam::UserIdArticleIdEquals(user_id, article_id),
+                user_favorite_article::UniqueWhereParam::UserIdArticleIdEquals(
+                    auth_user.user_id,
+                    article_id,
+                ),
             )
             .exec()
             .await?;
@@ -57,12 +64,12 @@ impl ArticlesService {
                 },
         } = input;
 
-        let author = prisma
-            .user()
-            .find_unique(user::id::equals(auth_user.user_id))
-            .exec()
-            .await?
-            .ok_or(AppError::NotFound(String::from("User not found")))?;
+        // let author = prisma
+        //     .user()
+        //     .find_unique(user::id::equals(auth_user.user_id))
+        //     .exec()
+        //     .await?
+        //     .ok_or(AppError::NotFound(String::from("User not found")))?;
 
         let article = prisma
             .article()
@@ -74,6 +81,7 @@ impl ArticlesService {
                 user::id::equals(auth_user.user_id),
                 vec![],
             )
+            .with(article::author::fetch())
             .exec()
             .await?;
 
@@ -93,7 +101,36 @@ impl ArticlesService {
         }
 
         Ok(Json::from(ArticleBody {
-            article: article.to_article(tag_list.unwrap_or_default(), false, 0, author.into()),
+            article: article.to_article(tag_list.unwrap_or_default(), false, false),
+        }))
+    }
+
+    pub async fn get_article(
+        auth_user: OptionalAuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+    ) -> Result<Json<ArticleBody<Article>>, AppError> {
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        if let Some(user) = auth_user.0 {
+            let favorited = Self::check_favorited(&prisma, &user, article.id).await?;
+
+            let followed =
+                ProfilesService::check_following(&prisma, &user, article.author_id).await?;
+
+            return Ok(Json::from(ArticleBody {
+                article: article.to_article(vec![], favorited, followed),
+            }));
+        }
+
+        Ok(Json::from(ArticleBody {
+            article: article.to_article(vec![], false, false),
         }))
     }
 }
