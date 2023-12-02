@@ -1,3 +1,9 @@
+setup:
+  cargo prisma migrate deploy
+
+generate:
+  cargo prisma generate
+
 run:
   cargo run
 

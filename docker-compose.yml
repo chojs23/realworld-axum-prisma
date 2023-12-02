@@ -7,7 +7,7 @@ services:
       - .env
       - .env.docker
     ports:
-      - "3305:3305"
+      - "3306:3306"
     volumes:
       - conduit:/var/lib/mysql
   server:
