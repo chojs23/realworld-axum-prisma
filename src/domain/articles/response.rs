@@ -24,14 +24,17 @@ pub struct Article {
 }
 
 impl article::Data {
-    pub fn to_article(self, tag_list: Vec<String>, favorited: bool, following: bool) -> Article {
+    pub fn to_article(self, favorited: bool, following: bool) -> Article {
         Article {
             id: self.id,
             slug: self.slug,
             title: self.title,
             description: self.description,
             body: self.body,
-            tag_list,
+            tag_list: match self.tags {
+                Some(tags) => tags.into_iter().map(|tag| tag.tag).collect(),
+                None => vec![],
+            },
             created_at: self.created_at,
             updated_at: self.updated_at,
             favorited,

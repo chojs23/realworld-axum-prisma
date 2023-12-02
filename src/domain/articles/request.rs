@@ -15,3 +15,12 @@ pub struct ArticleUpdateInput {
     pub description: Option<String>,
     pub body: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ArticleListQuery {
+    pub tag: Option<String>,
+    pub author: Option<String>,
+    pub favorited: Option<String>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}

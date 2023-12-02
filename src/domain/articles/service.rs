@@ -1,4 +1,7 @@
-use axum::{extract::Path, Extension, Json};
+use axum::{
+    extract::{Path, Query},
+    Extension, Json,
+};
 use prisma_client_rust::chrono;
 use std::sync::Arc;
 
@@ -10,9 +13,9 @@ use crate::{
 };
 
 use super::{
-    request::{ArticleCreateInput, ArticleUpdateInput},
+    request::{ArticleCreateInput, ArticleListQuery, ArticleUpdateInput},
     response::Article,
-    ArticleBody,
+    ArticleBody, ArticlesBody,
 };
 
 type Prisma = Extension<Arc<PrismaClient>>;
@@ -117,7 +120,7 @@ impl ArticlesService {
         }
 
         Ok(Json::from(ArticleBody {
-            article: article.to_article(tag_list.unwrap_or_default(), false, false),
+            article: article.to_article(false, false),
         }))
     }
 
@@ -174,7 +177,7 @@ impl ArticlesService {
             .await?;
 
         Ok(Json::from(ArticleBody {
-            article: updated_article.to_article(vec![], false, false),
+            article: updated_article.to_article(false, false),
         }))
     }
 
@@ -221,15 +224,6 @@ impl ArticlesService {
             .await?
             .ok_or(AppError::NotFound(String::from("Article not found")))?;
 
-        let tags = prisma
-            .article_tag()
-            .find_many(vec![article_tag::article_id::equals(article.id)])
-            .exec()
-            .await?
-            .into_iter()
-            .map(|tag| tag.tag)
-            .collect::<Vec<String>>();
-
         if let Some(user) = auth_user.0 {
             let favorited = Self::check_favorited(&prisma, &user, article.id).await?;
 
@@ -237,12 +231,74 @@ impl ArticlesService {
                 ProfilesService::check_following(&prisma, &user, article.author_id).await?;
 
             return Ok(Json::from(ArticleBody {
-                article: article.to_article(tags, favorited, followed),
+                article: article.to_article(favorited, followed),
             }));
         }
 
         Ok(Json::from(ArticleBody {
-            article: article.to_article(tags, false, false),
+            article: article.to_article(false, false),
+        }))
+    }
+
+    pub async fn get_articles(
+        auth_user: OptionalAuthUser,
+        prisma: Prisma,
+        Query(query): Query<ArticleListQuery>,
+    ) -> Result<Json<ArticlesBody<Article>>, AppError> {
+        let mut filter: Vec<prisma::article::WhereParam> = Vec::new();
+
+        if let Some(tag) = query.tag {
+            filter.push(article::tags::some(vec![article_tag::tag::equals(tag)]))
+        }
+
+        if let Some(author) = query.author {
+            filter.push(article::author::is(vec![user::username::equals(author)]))
+        }
+
+        if let Some(favorited) = query.favorited {
+            filter.push(article::favorited_by::some(vec![
+                user_favorite_article::user::is(vec![user::username::equals(favorited)]),
+            ]))
+        }
+
+        filter.push(article::deleted_at::equals(None));
+
+        let _articles = prisma
+            .article()
+            .find_many(filter.clone())
+            .with(article::author::fetch())
+            .with(article::tags::fetch(vec![]))
+            .take(query.limit.unwrap_or(20))
+            .skip(query.offset.unwrap_or(0))
+            .order_by(article::created_at::order(
+                prisma_client_rust::Direction::Desc,
+            ))
+            .exec()
+            .await?;
+
+        let articles_count = prisma.article().count(filter).exec().await?;
+
+        let mut articles: Vec<Article> = Vec::new();
+
+        if let Some(user) = auth_user.0 {
+            for article in _articles.iter() {
+                let favorited = Self::check_favorited(&prisma, &user, article.id).await?;
+
+                let followed =
+                    ProfilesService::check_following(&prisma, &user, article.author_id).await?;
+
+                articles.push(article.clone().to_article(favorited, followed));
+            }
+        } else {
+            articles = _articles
+                .iter()
+                .map(|article| article.clone().to_article(false, false))
+                .collect();
+        }
+
+        Ok(Json::from(ArticlesBody {
+            articles,
+            articles_count: articles_count as usize,
         }))
     }
 }

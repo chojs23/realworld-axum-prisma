@@ -11,5 +11,8 @@ pub struct ArticleBody<T> {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ArticlesBody<T> {
-    pub articles: T,
+    pub articles: Vec<T>,
+
+    #[serde(rename = "articlesCount")]
+    pub articles_count: usize,
 }

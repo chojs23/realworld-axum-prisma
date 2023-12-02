@@ -9,7 +9,7 @@ services:
     ports:
       - "3305:3305"
     volumes:
-      - data:/var/lib/mysql
+      - conduit:/var/lib/mysql
   server:
     build:
       context: .
@@ -22,4 +22,4 @@ services:
     ports:
       - "8000:8000"
 volumes:
-  data:
+  conduit:
