@@ -1,8 +1,5 @@
 FROM rust:latest AS builder
 
-RUN rustup install nightly
-RUN rustup default nightly
-
 WORKDIR /app
 COPY src src
 COPY Cargo.toml Cargo.lock ./
