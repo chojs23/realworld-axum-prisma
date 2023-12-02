@@ -327,14 +327,6 @@ impl ArticlesService {
             ]))
         }
 
-        let aa = prisma
-            .user()
-            .find_unique(user::id::equals(auth_user.user_id))
-            .with(user::following::fetch(vec![]))
-            .with(user::followed_by::fetch(vec![]))
-            .exec()
-            .await?;
-
         filter.push(article::author::is(vec![user::followed_by::some(vec![
             followed_by_id::equals(auth_user.user_id),
         ])]));
@@ -517,8 +509,6 @@ impl ArticlesService {
 
         if let Some(user) = auth_user.0 {
             for comment in comments.iter_mut() {
-                let favorited = Self::check_favorited(&prisma, &user, article.id).await?;
-
                 let followed =
                     ProfilesService::check_following(&prisma, &user, article.author_id).await?;
 
@@ -532,7 +522,7 @@ impl ArticlesService {
     pub async fn delete_comment(
         auth_user: AuthUser,
         prisma: Prisma,
-        Path((slug, comment_id)): Path<(String, i32)>,
+        Path((_slug, comment_id)): Path<(String, i32)>,
     ) -> Result<Json<String>, AppError> {
         let comment = prisma
             .comment()
