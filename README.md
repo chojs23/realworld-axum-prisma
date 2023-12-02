@@ -2,7 +2,7 @@
 
 # Realworld Rust Axum Prisma
 
-This project utilizes Rust with the Axum v0.7 framework along with the Prisma Client Rust to build a realworld application. For Prisma Client Rust ORM, refer to [Prisma](https://github.com/prisma/prisma) and [Prisma Client Rust Repository](https://github.com/Brendonovich/prisma-client-rust) for more information.
+This project utilizes Rust with the [Axum](https://github.com/tokio-rs/axum) v0.7 framework along with the Prisma Client Rust to build a realworld application. For Prisma Client Rust ORM, refer to [Prisma](https://github.com/prisma/prisma) and [Prisma Client Rust Repository](https://github.com/Brendonovich/prisma-client-rust) for more information.
 
 ## Prerequisites
 
@@ -21,6 +21,8 @@ Make sure you have the following installed:
 3. Ensure your MySQL server is running.
 4. Apply migrations
 5. Generate Prisma Client
+
+If you want to use other databases, you need to change the database URL in the `.env` file and change database provider in schema.prisma file. For more information check out [Docs](https://prisma.brendonovich.dev/getting-started/setup).
 
 ### Running the Application
 
