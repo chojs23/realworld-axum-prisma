@@ -12,5 +12,6 @@ impl ArticlesRouter {
         Router::new()
             .route("/articles", post(ArticlesService::create_article))
             .route("/articles/:slug", get(ArticlesService::get_article))
+            .route("/articles/:slug", put(ArticlesService::update_article))
     }
 }
