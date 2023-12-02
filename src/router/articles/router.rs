@@ -16,5 +16,13 @@ impl ArticlesRouter {
             .route("/articles/:slug", get(ArticlesService::get_article))
             .route("/articles/:slug", put(ArticlesService::update_article))
             .route("/articles/:slug", delete(ArticlesService::delete_article))
+            .route(
+                "/articles/:slug/favorite",
+                post(ArticlesService::favorite_article),
+            )
+            .route(
+                "/articles/:slug/favorite",
+                delete(ArticlesService::unfavorite_article),
+            )
     }
 }

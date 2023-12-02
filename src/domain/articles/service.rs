@@ -370,4 +370,85 @@ impl ArticlesService {
             articles_count: articles_count as usize,
         }))
     }
+
+    pub async fn favorite_article(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+    ) -> Result<Json<ArticleBody<Article>>, AppError> {
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        let _ = prisma
+            .user_favorite_article()
+            .create(
+                user::id::equals(auth_user.user_id),
+                article::id::equals(article.id),
+                vec![],
+            )
+            .exec()
+            .await?;
+
+        let article = prisma
+            .article()
+            .update(
+                article::slug::equals(slug),
+                vec![article::favorites_count::increment(1)],
+            )
+            .with(article::author::fetch())
+            .exec()
+            .await?;
+
+        let following =
+            ProfilesService::check_following(&prisma, &auth_user, article.author_id).await?;
+
+        Ok(Json::from(ArticleBody {
+            article: article.to_article(true, following),
+        }))
+    }
+
+    pub async fn unfavorite_article(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+    ) -> Result<Json<ArticleBody<Article>>, AppError> {
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        let _ = prisma
+            .user_favorite_article()
+            .delete(user_favorite_article::user_id_article_id(
+                auth_user.user_id,
+                article.id,
+            ))
+            .exec()
+            .await?;
+
+        let article = prisma
+            .article()
+            .update(
+                article::slug::equals(slug),
+                vec![article::favorites_count::decrement(1)],
+            )
+            .with(article::author::fetch())
+            .exec()
+            .await?;
+
+        let following =
+            ProfilesService::check_following(&prisma, &auth_user, article.author_id).await?;
+
+        Ok(Json::from(ArticleBody {
+            article: article.to_article(false, following),
+        }))
+    }
 }
