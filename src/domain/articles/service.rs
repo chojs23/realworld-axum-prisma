@@ -11,15 +11,15 @@ use crate::{
     domain::profiles::service::ProfilesService,
     extractor::{AuthUser, OptionalAuthUser},
     prisma::{
-        self, article, article_tag, user, user_favorite_article, user_follows::followed_by_id,
-        PrismaClient,
+        self, article, article_tag, comment, user, user_favorite_article,
+        user_follows::followed_by_id, PrismaClient,
     },
 };
 
 use super::{
-    request::{ArticleCreateInput, ArticleListQuery, ArticleUpdateInput},
-    response::Article,
-    ArticleBody, ArticlesBody,
+    request::{ArticleCreateInput, ArticleListQuery, ArticleUpdateInput, CommentCreateInput},
+    response::{Article, Comment},
+    ArticleBody, ArticlesBody, CommentBody, CommentsBody,
 };
 
 type Prisma = Extension<Arc<PrismaClient>>;
@@ -450,5 +450,113 @@ impl ArticlesService {
         Ok(Json::from(ArticleBody {
             article: article.to_article(false, following),
         }))
+    }
+
+    pub async fn create_comment(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+        Json(input): Json<CommentBody<CommentCreateInput>>,
+    ) -> Result<Json<CommentBody<Comment>>, AppError> {
+        let CommentBody {
+            comment: CommentCreateInput { body },
+        } = input;
+
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        let comment = prisma
+            .comment()
+            .create(
+                body,
+                user::id::equals(auth_user.user_id),
+                article::id::equals(article.id),
+                vec![],
+            )
+            .with(comment::author::fetch())
+            .exec()
+            .await?;
+
+        Ok(Json::from(CommentBody {
+            comment: comment.to_comment(false),
+        }))
+    }
+
+    pub async fn get_comments(
+        auth_user: OptionalAuthUser,
+        prisma: Prisma,
+        Path(slug): Path<String>,
+    ) -> Result<Json<CommentsBody<Comment>>, AppError> {
+        let article = prisma
+            .article()
+            .find_unique(article::slug::equals(slug.clone()))
+            .with(article::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Article not found")))?;
+
+        let comments = prisma
+            .comment()
+            .find_many(vec![
+                comment::article_id::equals(article.id),
+                comment::deleted_at::equals(None),
+            ])
+            .with(comment::author::fetch())
+            .exec()
+            .await?;
+
+        let mut comments: Vec<Comment> = comments
+            .iter()
+            .map(|comment| comment.clone().to_comment(false))
+            .collect();
+
+        if let Some(user) = auth_user.0 {
+            for comment in comments.iter_mut() {
+                let favorited = Self::check_favorited(&prisma, &user, article.id).await?;
+
+                let followed =
+                    ProfilesService::check_following(&prisma, &user, article.author_id).await?;
+
+                comment.author.following = followed;
+            }
+        }
+
+        Ok(Json::from(CommentsBody { comments }))
+    }
+
+    pub async fn delete_comment(
+        auth_user: AuthUser,
+        prisma: Prisma,
+        Path((slug, comment_id)): Path<(String, i32)>,
+    ) -> Result<Json<String>, AppError> {
+        let comment = prisma
+            .comment()
+            .find_unique(comment::id::equals(comment_id))
+            .with(comment::author::fetch())
+            .exec()
+            .await?
+            .ok_or(AppError::NotFound(String::from("Comment not found")))?;
+
+        if comment.author_id != auth_user.user_id {
+            return Err(AppError::BadRequest(String::from(
+                "You are not the author of this comment",
+            )));
+        }
+
+        let _ = prisma
+            .comment()
+            .update(
+                comment::id::equals(comment_id),
+                vec![comment::deleted_at::set(Some(chrono::Utc::now().into()))],
+            )
+            .exec()
+            .await?;
+
+        Ok(Json::from("Comment deleted".to_string()))
     }
 }

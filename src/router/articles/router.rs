@@ -24,5 +24,17 @@ impl ArticlesRouter {
                 "/articles/:slug/favorite",
                 delete(ArticlesService::unfavorite_article),
             )
+            .route(
+                "/articles/:slug/comments",
+                post(ArticlesService::create_comment),
+            )
+            .route(
+                "/articles/:slug/comments",
+                get(ArticlesService::get_comments),
+            )
+            .route(
+                "/articles/:slug/comments/:comment_id",
+                delete(ArticlesService::delete_comment),
+            )
     }
 }

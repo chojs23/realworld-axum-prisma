@@ -16,3 +16,13 @@ pub struct ArticlesBody<T> {
     #[serde(rename = "articlesCount")]
     pub articles_count: usize,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommentBody<T> {
+    pub comment: T,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommentsBody<T> {
+    pub comments: Vec<T>,
+}

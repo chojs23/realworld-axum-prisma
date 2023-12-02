@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{domain::profiles::response::Profile, prisma::article};
+use crate::{
+    domain::profiles::response::Profile,
+    prisma::{article, comment},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Article {
@@ -39,6 +42,35 @@ impl article::Data {
             updated_at: self.updated_at,
             favorited,
             favorites_count: self.favorites_count,
+            author: self.author.unwrap().to_profile(following),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Comment {
+    pub id: i32,
+    pub body: String,
+    #[serde(rename = "createdAt")]
+    pub created_at:
+        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at:
+        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+    #[serde(rename = "deletedAt")]
+    pub deleted_at:
+        Option<::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>>,
+    pub author: Profile,
+}
+
+impl comment::Data {
+    pub fn to_comment(self, following: bool) -> Comment {
+        Comment {
+            id: self.id,
+            body: self.body,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            deleted_at: self.deleted_at,
             author: self.author.unwrap().to_profile(following),
         }
     }
