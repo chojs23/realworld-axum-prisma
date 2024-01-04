@@ -6,22 +6,19 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Article {
     pub id: i32,
     pub slug: String,
     pub title: String,
     pub description: String,
     pub body: String,
-    #[serde(rename = "tagList")]
     pub tag_list: Vec<String>,
-    #[serde(rename = "createdAt")]
     pub created_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
-    #[serde(rename = "updatedAt")]
     pub updated_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
     pub favorited: bool,
-    #[serde(rename = "favoritesCount")]
     pub favorites_count: i32,
     pub author: Profile,
 }
@@ -48,16 +45,14 @@ impl article::Data {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Comment {
     pub id: i32,
     pub body: String,
-    #[serde(rename = "createdAt")]
     pub created_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
-    #[serde(rename = "updatedAt")]
     pub updated_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
-    #[serde(rename = "deletedAt")]
     pub deleted_at:
         Option<::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>>,
     pub author: Profile,

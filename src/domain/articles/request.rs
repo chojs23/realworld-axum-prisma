@@ -1,11 +1,11 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ArticleCreateInput {
     pub title: String,
     pub description: String,
     pub body: String,
-    #[serde(rename = "tagList")]
     pub tag_list: Option<Vec<String>>,
 }
 

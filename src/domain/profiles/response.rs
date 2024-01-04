@@ -4,16 +4,9 @@ use crate::prisma::user;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Profile {
-    #[serde(rename = "username")]
     pub username: String,
-
-    #[serde(rename = "bio")]
     pub bio: Option<String>,
-
-    #[serde(rename = "image")]
     pub image: Option<String>,
-
-    #[serde(rename = "following")]
     pub following: bool,
 }
 

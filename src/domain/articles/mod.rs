@@ -10,10 +10,9 @@ pub struct ArticleBody<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ArticlesBody<T> {
     pub articles: Vec<T>,
-
-    #[serde(rename = "articlesCount")]
     pub articles_count: usize,
 }
 

@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
 
     let prisma_client = Arc::new(PrismaClient::_builder().build().await?);
 
-    let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
+    let cors = CorsLayer::new().allow_methods(Any).allow_headers(Any).allow_origin(Any);
 
     let app = AppRouter::new()
         .layer(cors)
