@@ -3,21 +3,15 @@ use serde::{Deserialize, Serialize};
 use crate::prisma::user;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
-    #[serde(rename = "id")]
     pub id: i32,
-    #[serde(rename = "email")]
     pub email: String,
-    #[serde(rename = "username")]
     pub username: String,
-    #[serde(rename = "bio")]
     pub bio: Option<String>,
-    #[serde(rename = "image")]
     pub image: Option<String>,
-    #[serde(rename = "createdAt")]
     pub created_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
-    #[serde(rename = "updatedAt")]
     pub updated_at:
         ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
 
