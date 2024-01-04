@@ -128,8 +128,8 @@ where
             parts
                 .headers
                 .get(AUTHORIZATION)
-                .map(|auth_header| AuthUser::from_authorization(&ctx, auth_header))
-                .transpose()?,
+                .map(|auth_header| AuthUser::from_authorization(&ctx, auth_header).ok())
+                .flatten(),
         ))
     }
 }
