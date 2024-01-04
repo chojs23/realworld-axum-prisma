@@ -11,6 +11,7 @@ pub struct AppConfig {
     pub log_level: String,
     pub db: DatabaseConfig,
     pub jwt: JwtConfig,
+    pub tz_offset: i32
 }
 
 impl AppConfig {
@@ -23,7 +24,12 @@ impl AppConfig {
             },
             jwt: JwtConfig {
                 secret: get_env("JWT_SECRET"),
+                exp_in_sec: value_to_seconds(
+                    get_env("JWT_EXP_VALUE").parse().unwrap(),
+                    get_env("JWT_EXP_UNIT"),
+                )
             },
+            tz_offset: get_env("TIMEZONE_EAST_OPT_IN_HOURS").parse().unwrap(),
         }
     }
 }
@@ -31,4 +37,18 @@ impl AppConfig {
 pub fn get_env(key: &str) -> String {
     dotenv().ok();
     env::var(key).unwrap_or_else(|_| panic!("{} must be set", key))
+}
+
+pub fn value_to_seconds(value: i64, unit: String) -> i64 {
+
+    match unit.as_str() {
+        "seconds" => value,
+        "minutes" => value * 60,
+        "hours" => value * 3600,
+        "days" => value * 86400,
+        "weeks" => value * 604800,
+        "months" => value * 2592000,
+        "years" => value * 31536000,
+        _ => panic!("Invalid unit"),
+    }
 }

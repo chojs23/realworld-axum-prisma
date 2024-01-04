@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
+use prisma_client_rust::chrono::{FixedOffset, TimeZone};
 
 use crate::prisma::user;
+use crate::config::CONTEXT;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -11,9 +13,9 @@ pub struct User {
     pub bio: Option<String>,
     pub image: Option<String>,
     pub created_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub updated_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
 
     pub token: Option<String>,
 }
@@ -32,8 +34,10 @@ impl From<user::Data> for User {
             username: data.username,
             bio: data.bio,
             image: data.image,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
+            created_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
+                .unwrap().from_utc_datetime(&data.created_at.naive_utc()),
+            updated_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
+                .unwrap().from_utc_datetime(&data.updated_at.naive_utc()),
             token: None,
         }
     }

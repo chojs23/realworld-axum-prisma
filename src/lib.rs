@@ -1,3 +1,4 @@
+#![allow(warnings)]
 pub mod app_error;
 pub mod config;
 pub mod domain;

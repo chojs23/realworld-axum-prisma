@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use lazy_static::lazy_static;
 
 use self::app_config::AppConfig;
 
@@ -9,4 +10,11 @@ pub mod jwt;
 #[derive(Clone)]
 pub struct AppContext {
     pub config: Arc<AppConfig>,
+}
+
+lazy_static! {
+    pub static ref CONFIG: AppConfig = AppConfig::init();
+    pub static ref CONTEXT: AppContext = AppContext {
+        config: Arc::new(CONFIG.clone()),
+    };
 }
