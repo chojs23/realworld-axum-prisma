@@ -161,8 +161,12 @@ impl UsersService {
             .user()
             .find_unique(user::email::equals(email))
             .exec()
-            .await?
-            .unwrap();
+            .await?;
+
+        let data = match data {
+            Some(user_data) => user_data,
+            None => return Err(AppError::NotFound(String::from("User not found"))),
+        };
 
         Self::verify_password(password.as_str(), data.password.as_str())?;
         let mut user: User = data.into();
