@@ -32,25 +32,25 @@ members = ["prisma-cli"]
 
 [dependencies]
 prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.10" }
-serde = { version = "1.0.192", features = ["derive"] }
-serde_json = "1.0.108"
-tokio = { version = "1.34.0", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-axum = { version = "0.7.1", features = [] }
-anyhow = "1.0.44"
+serde = { version = "1.0.194", features = ["derive"] }
+serde_json = "1.0.111"
+tokio = { version = "1.35.1", features = ["full"] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+axum = { version = "0.7.3", features = [] }
+anyhow = "1.0.79"
 tower = { version = "0.4.13", features = ["timeout"] }
 tower-http = { version = "0.5", features = ["trace", "cors"] }
 dotenv = "0.15.0"
-metrics = "0.21.1"
+metrics = "0.22.0"
 argon2 = "0.5.2"
 
-jsonwebtoken = "9.1.0"
+jsonwebtoken = "9.2.0"
 
 env_logger = "0.10.1"
-itertools = "0.11.0"
-log = "0.4.14"
-rand = "0.8.4"
-thiserror = "1.0.30"
+itertools = "0.12.0"
+log = "0.4.20"
+rand = "0.8.5"
+thiserror = "1.0.56"
 lazy_static = "1.4.0"
 regex = "1.10.2"
