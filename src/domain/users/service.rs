@@ -2,6 +2,7 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, Pa
 use axum::{extract::State, Extension, Json};
 use rand::rngs::OsRng;
 use std::sync::Arc;
+use regex::Regex;
 
 use crate::{
     app_error::AppError,
@@ -58,6 +59,8 @@ impl UsersService {
                 },
         } = input;
 
+        Self::is_valid_email(&email)?;
+
         let data = prisma
             .user()
             .create(
@@ -93,6 +96,10 @@ impl UsersService {
                     password,
                 },
         } = input;
+
+        if let Some(email) = &email{
+            Self::is_valid_email(email)?;
+        }
 
         let data = prisma
             .user()
@@ -164,6 +171,14 @@ impl UsersService {
         user.set_token(token);
 
         Ok(Json::from(UserBody { user }))
+    }
+
+    fn is_valid_email(email: &str) -> Result<(), AppError> {
+        let email_regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+        if !email_regex.is_match(email) {
+            return Err(AppError::BadRequest(String::from("Invalid email format")));
+        }
+        Ok(())
     }
 
     fn hash_password(password: &str) -> anyhow::Result<String> {

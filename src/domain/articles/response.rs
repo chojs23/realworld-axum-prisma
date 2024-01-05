@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use prisma_client_rust::chrono::{FixedOffset, TimeZone};
 
 use crate::{
     domain::profiles::response::Profile,
@@ -15,9 +16,9 @@ pub struct Article {
     pub body: String,
     pub tag_list: Vec<String>,
     pub created_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub updated_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub favorited: bool,
     pub favorites_count: i32,
     pub author: Profile,
@@ -50,11 +51,11 @@ pub struct Comment {
     pub id: i32,
     pub body: String,
     pub created_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub updated_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub deleted_at:
-        Option<::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>>,
+        Option<::prisma_client_rust::chrono::DateTime<FixedOffset>>,
     pub author: Profile,
 }
 

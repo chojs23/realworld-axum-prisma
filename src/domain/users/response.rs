@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use prisma_client_rust::chrono::{FixedOffset, TimeZone};
 
 use crate::prisma::user;
 
@@ -11,9 +12,9 @@ pub struct User {
     pub bio: Option<String>,
     pub image: Option<String>,
     pub created_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
     pub updated_at:
-        ::prisma_client_rust::chrono::DateTime<::prisma_client_rust::chrono::FixedOffset>,
+        ::prisma_client_rust::chrono::DateTime<FixedOffset>,
 
     pub token: Option<String>,
 }

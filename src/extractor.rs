@@ -10,7 +10,6 @@ use tracing::{debug, info};
 
 use crate::{app_error::AppError, config::AppContext};
 
-const JWT_EXPIRES_IN: i64 = 60 * 60 * 24 * 7; // 7 days
 const AUTH_HEADER_PREFIX: &str = "Token ";
 
 #[derive(Debug)]
@@ -32,7 +31,7 @@ impl AuthUser {
         let key = jsonwebtoken::EncodingKey::from_secret(ctx.config.jwt.secret.as_ref());
         let claims = AuthUserClaims {
             user_id: self.user_id,
-            exp: chrono::Utc::now().timestamp() + JWT_EXPIRES_IN,
+            exp: chrono::Utc::now().timestamp() + ctx.config.jwt.exp_in_sec,
         };
 
         encode(&jsonwebtoken::Header::default(), &claims, &key).unwrap()
@@ -129,8 +128,8 @@ where
             parts
                 .headers
                 .get(AUTHORIZATION)
-                .map(|auth_header| AuthUser::from_authorization(&ctx, auth_header))
-                .transpose()?,
+                .map(|auth_header| AuthUser::from_authorization(&ctx, auth_header).ok())
+                .flatten(),
         ))
     }
 }
