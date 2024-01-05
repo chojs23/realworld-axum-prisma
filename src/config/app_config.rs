@@ -11,7 +11,6 @@ pub struct AppConfig {
     pub log_level: String,
     pub db: DatabaseConfig,
     pub jwt: JwtConfig,
-    pub tz_offset: i32
 }
 
 impl AppConfig {
@@ -29,7 +28,6 @@ impl AppConfig {
                     get_env("JWT_EXP_UNIT"),
                 )
             },
-            tz_offset: get_env("TIMEZONE_EAST_OPT_IN_HOURS").parse().unwrap(),
         }
     }
 }

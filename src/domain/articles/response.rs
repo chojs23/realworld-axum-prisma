@@ -4,7 +4,6 @@ use prisma_client_rust::chrono::{FixedOffset, TimeZone};
 use crate::{
     domain::profiles::response::Profile,
     prisma::{article, comment},
-    config::CONTEXT,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,10 +36,8 @@ impl article::Data {
                 Some(tags) => tags.into_iter().map(|tag| tag.tag).collect(),
                 None => vec![],
             },
-            created_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
-                .unwrap().from_utc_datetime(&self.created_at.naive_utc()),
-            updated_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
-                .unwrap().from_utc_datetime(&self.updated_at.naive_utc()),
+            created_at: self.created_at,
+            updated_at: self.updated_at,
             favorited,
             favorites_count: self.favorites_count,
             author: self.author.unwrap().to_profile(following),
@@ -67,15 +64,9 @@ impl comment::Data {
         Comment {
             id: self.id,
             body: self.body,
-            created_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
-                .unwrap().from_utc_datetime(&self.created_at.naive_utc()),
-            updated_at: FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
-                .unwrap().from_utc_datetime(&self.updated_at.naive_utc()),
-            deleted_at: match self.deleted_at {
-                Some(deleted_at) => Some(FixedOffset::east_opt(3600 * CONTEXT.config.tz_offset)
-                    .unwrap().from_utc_datetime(&deleted_at.naive_utc())),
-                None => None,
-            },
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            deleted_at: self.deleted_at,
             author: self.author.unwrap().to_profile(following),
         }
     }

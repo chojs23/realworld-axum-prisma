@@ -11,10 +11,3 @@ pub mod jwt;
 pub struct AppContext {
     pub config: Arc<AppConfig>,
 }
-
-lazy_static! {
-    pub static ref CONFIG: AppConfig = AppConfig::init();
-    pub static ref CONTEXT: AppContext = AppContext {
-        config: Arc::new(CONFIG.clone()),
-    };
-}
