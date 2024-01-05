@@ -3528,6 +3528,7 @@ dependencies = [
  "metrics 0.21.1",
  "prisma-client-rust",
  "rand 0.8.5",
+ "regex",
  "serde",
  "serde_json",
  "thiserror",
