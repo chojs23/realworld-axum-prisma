@@ -23,21 +23,20 @@ impl ProfilesService {
             .user()
             .find_unique(user::username::equals(username))
             .exec()
-            .await?;
+            .await?
+            .ok_or(AppError::NotFound(String::from("User not found")))?;
 
-        match user {
-            Some(data) => {
-                if Self::check_following(&prisma, &auth_user.0.unwrap(), data.id).await? {
-                    return Ok(Json::from(ProfileBody {
-                        profile: data.to_profile(true),
-                    }));
-                }
-
+        return match auth_user.0 {
+            Some(auth_user) => {
                 Ok(Json::from(ProfileBody {
-                    profile: data.into(),
+                    profile: user.clone().to_profile(
+                        Self::check_following(&prisma, &auth_user, user.id).await?
+                    ),
                 }))
             }
-            None => Err(AppError::NotFound(String::from("User not found"))),
+            None => Ok(Json::from(ProfileBody {
+                profile: user.to_profile(false),
+            }))
         }
     }
 

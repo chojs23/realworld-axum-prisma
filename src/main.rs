@@ -106,8 +106,10 @@ async fn track_metrics(request: Request, next: Next) -> impl IntoResponse {
         ("status", status),
     ];
 
-    metrics::increment_counter!("http_requests_total", &labels);
-    metrics::histogram!("http_requests_duration_seconds", latency, &labels);
+    let counter = metrics::counter!("http_requests_total", &labels);
+    counter.increment(1);
+    let histogram = metrics::histogram!("http_requests_duration_seconds", &labels);
+    histogram.record(latency);
 
     response
 }
