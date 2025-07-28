@@ -4,6 +4,10 @@
 
 This project utilizes Rust with the [Axum](https://github.com/tokio-rs/axum) v0.7 framework along with the Prisma Client Rust to build a realworld application. For Prisma Client Rust ORM, refer to [Prisma](https://github.com/prisma/prisma) and [Prisma Client Rust Repository](https://github.com/Brendonovich/prisma-client-rust) for more information.
 
+
+Check other implementaion of example apps in [Codebaseshow](https://codebase.show/projects/realworld?category=backend&language=rust).
+For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
+
 ## Prerequisites
 
 Make sure you have the following installed:
